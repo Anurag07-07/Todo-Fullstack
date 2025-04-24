@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Todo App</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background-color: #f0f0f0;
+      }
+      h1 {
+        color: #333;
+      }
+      h4 {
+        margin-top: 20px;
+        color: #555;
+      }
+      input[type="text"] {
+        padding: 10px;
+        margin: 5px 0;
+        width: 80%;
+        max-width: 300px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 5px;
+        border: none;
+        border-radius: 5px;
+        background-color: #007bff;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      #todo {
+        margin-top: 20px;
+        width: 80%;
+        max-width: 500px;
+        background-color: white;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <button id="logoutBtn">Logout</button>
+    <h1>Todo List</h1>
+
+    <h4>Enter Task</h4>
+    <input id="task" type="text" placeholder="Enter your task here" />
+    <input id="done" type="text" placeholder="Enter true or false only" />
+    <button id="addBtn">Add Task</button>
+    <button id="showBtn">Show Task</button>
+
+    <div id="todo"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+      function logout() {
+        localStorage.removeItem("token");
+        window.location.href = "/";
+      }
+
+      async function addtodo() {
+        const title = document.querySelector("#task").value;
+        const done = document.querySelector("#done").value;
+
+        try {
+          await axios.post(
+            "http://localhost:3000/todo",
+            { title, done },
+            {
+              headers: { token: localStorage.getItem("token") },
+            }
+          );
+          alert("Todo Added");
+          document.querySelector("#task").value = "";
+          document.querySelector("#done").value = "";
+        } catch (error) {
+          console.log(error);
+          alert("Something went wrong while adding.");
+        }
+      }
+
+      async function DeleteTodo(id) {
+        try {
+          await axios.delete(`http://localhost:3000/todos/${id}`, {
+            headers: { token: localStorage.getItem("token") },
+          });
+          showtodo(); // Refresh after deletion
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      async function showtodo() {
+        const result = await axios.get("http://localhost:3000/todos", {
+          headers: {
+            token: localStorage.getItem("token"),
+          },
+        });
+
+        const todoList = result.data.response;
+
+        const container = document.querySelector("#todo");
+        container.innerHTML = "";
+
+        // Loop through each todo and render
+        todoList.forEach((todoItem) => {
+          const div = document.createElement("div");
+          div.setAttribute("id", todoItem._id);
+
+          const title = document.createElement("span");
+          title.innerHTML = todoItem.title;
+
+          const done = document.createElement("span");
+          done.innerHTML = todoItem.done ? "✅ Done" : "❌ Not Done";
+          done.style.marginLeft = "10px";
+
+          const button = document.createElement("button");
+          button.textContent = "Delete";
+          button.style.marginLeft = "10px";
+
+          button.addEventListener("click", () => DeleteTodo(todoItem._id));
+
+          div.appendChild(title);
+          div.appendChild(done);
+          div.appendChild(button);
+
+          container.appendChild(div);
+        });
+      }
+
+      document.querySelector("#addBtn").addEventListener("click", addtodo);
+      document.querySelector("#showBtn").addEventListener("click", showtodo);
+      document.querySelector("#logoutBtn").addEventListener("click", logout);
+    </script>
+  </body>
+</html>
